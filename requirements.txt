@@ -6,4 +6,5 @@ pydantic==2.11.7
 pypdf==5.9.0
 pinecone==7.3.0
 sentence-transformers==2.2.2
+huggingface_hub==0.10.1
 python-multipart==0.0.20

@@ -15,7 +15,7 @@ def get_embedder():
     if _embedder is None:
         try:
             # Use small model to fit in 512MB RAM
-            _embedder = SentenceTransformer("all-MiniLM-L6-v2")  # 384-dim
+            _embedder = SentenceTransformer("paraphrase-MiniLM-L3-v2")  # 384-dim
         except Exception as e:
             raise RuntimeError(f"❌ Failed to load embedder: {e}")
     return _embedder

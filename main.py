@@ -16,15 +16,29 @@ app = FastAPI()
 @app.post("/run")
 async def run_query(file: UploadFile = File(...), question: str = Form(...)):
     try:
+        print("📥 Step 1: Reading uploaded file")
         file_bytes = await file.read()
+
+        print("📄 Step 2: Extracting text from PDF")
         raw_text = extract_text_from_pdf(file_bytes)
+        print(f"✅ Extracted {len(raw_text)} characters of text")
 
+        print("🧩 Step 3: Chunking text")
         chunks = chunk_text(raw_text)
-        file_id = str(uuid.uuid4())
+        print(f"✅ Chunked into {len(chunks)} pieces")
 
+        print("📦 Step 4: Storing chunks in Pinecone")
+        file_id = str(uuid.uuid4())
         store_chunks_in_pinecone(chunks, file_id)
+        print(f"✅ Stored chunks with file_id: {file_id}")
+
+        print("🔍 Step 5: Querying Pinecone")
         top_chunks = query_chunks_from_pinecone(question)
+        print(f"✅ Retrieved {len(top_chunks)} top chunks")
+
+        print("🤖 Step 6: Querying Groq LLM")
         answer = query_groq_llm(" ".join(top_chunks), question)
+        print("✅ Received answer from Groq")
 
         return {
             "question": question,
@@ -33,7 +47,6 @@ async def run_query(file: UploadFile = File(...), question: str = Form(...)):
         }
 
     except Exception as e:
-        # Log error to console
         print(f"🔥 Error in /run: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 

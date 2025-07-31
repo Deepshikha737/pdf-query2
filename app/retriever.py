@@ -1,29 +1,30 @@
 import os
-from pinecone import Pinecone
+import pinecone
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Load embedder once globally to avoid repeated heavy loads
+# Initialize SentenceTransformer once
 _embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
+# Initialize Pinecone once
+pinecone.init(
+    api_key=os.getenv("PINECONE_API_KEY"),
+    environment=os.getenv("PINECONE_ENVIRONMENT")
+)
+
 def get_index():
-    api_key = os.getenv("PINECONE_API_KEY")
     index_name = os.getenv("PINECONE_INDEX_NAME")
-
-    if not api_key or not index_name:
-        raise ValueError("❌ Pinecone API key or Index name not set in environment variables.")
-
-    pc = Pinecone(api_key=api_key)
-    index = pc.Index(index_name)
+    if not index_name:
+        raise ValueError("❌ Pinecone index name not set in environment variables.")
 
     try:
+        index = pinecone.Index(index_name)
         index.describe_index_stats()
+        return index
     except Exception as e:
         raise RuntimeError(f"❌ Pinecone index not ready or does not exist: {e}")
-
-    return index
 
 def get_embedder():
     return _embedder
@@ -47,7 +48,7 @@ def store_chunks_in_pinecone(chunks, file_id):
     if vectors:
         index.upsert(vectors=vectors)
 
-def query_chunks_from_pinecone(query, top_k=3):  # Reduce top_k to save memory
+def query_chunks_from_pinecone(query, top_k=3):
     embedder = get_embedder()
     index = get_index()
 

@@ -1,36 +1,48 @@
 import os
-import pinecone
 from dotenv import load_dotenv
+
+from pinecone import Pinecone, ServerlessSpec
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
 _embedder = None
 _index = None
+_pc_client = None
 
 def get_embedder():
     global _embedder
     if _embedder is None:
         try:
-            from sentence_transformers import SentenceTransformer
-            # Use a small model to fit in 512MB RAM
-            _embedder = SentenceTransformer("all-MiniLM-L4-v2")  # ~60MB
+            # Use small model to fit in 512MB RAM
+            _embedder = SentenceTransformer("all-MiniLM-L6-v2")  # 384-dim
         except Exception as e:
             raise RuntimeError(f"❌ Failed to load embedder: {e}")
     return _embedder
 
 def get_index():
-    global _index
+    global _index, _pc_client
     if _index is None:
         try:
-            pinecone.init(
-                api_key=os.getenv("PINECONE_API_KEY"),
-                environment=os.getenv("PINECONE_ENVIRONMENT")
-            )
             index_name = os.getenv("PINECONE_INDEX_NAME")
             if not index_name:
                 raise ValueError("❌ Pinecone index name not set in environment variables.")
-            _index = pinecone.Index(index_name)
-            _index.describe_index_stats()
+            
+            # Initialize Pinecone client
+            _pc_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+            if index_name not in _pc_client.list_indexes().names():
+                _pc_client.create_index(
+                    name=index_name,
+                    dimension=384,
+                    metric="cosine",
+                    spec=ServerlessSpec(
+                        cloud="aws",  # or "gcp" if using GCP
+                        region=os.getenv("PINECONE_REGION", "us-west-2")
+                    )
+                )
+
+            _index = _pc_client.Index(index_name)
         except Exception as e:
             raise RuntimeError(f"❌ Pinecone index not ready or does not exist: {e}")
     return _index

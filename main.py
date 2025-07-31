@@ -17,20 +17,28 @@ logging.basicConfig(level=logging.INFO)
 @app.post("/run")
 async def run_query(file: UploadFile = File(...), question: str = Form(...)):
     try:
+        logging.info("📥 Received file and question: %s", question)
+
         file_bytes = await file.read()
         raw_text = extract_text_from_pdf(file_bytes)
+        logging.info("📝 Extracted %d characters of text", len(raw_text))
 
         if not raw_text.strip():
             return JSONResponse(content={"error": "No extractable text found in PDF."}, status_code=400)
 
         chunks = chunk_text(raw_text)
+        logging.info("✂️ Generated %d chunks", len(chunks))
+
         if not chunks:
             return JSONResponse(content={"error": "Failed to generate any chunks from text."}, status_code=400)
 
         file_id = str(uuid.uuid4())
         store_chunks_in_pinecone(chunks, file_id)
+        logging.info("📦 Stored chunks in Pinecone with file_id: %s", file_id)
 
         top_chunks = query_chunks_from_pinecone(question)
+        logging.info("🔍 Retrieved %d top matching chunks", len(top_chunks))
+
         if not top_chunks:
             return JSONResponse(content={"error": "No relevant context found."}, status_code=400)
 
@@ -44,9 +52,9 @@ async def run_query(file: UploadFile = File(...), question: str = Form(...)):
         }
 
     except Exception as e:
-        logging.exception("Error during /run endpoint:")
+        logging.exception("❌ Error during /run endpoint:")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/")
 def read_root():
-    return {"message": "LLM PDF QA API is running. Visit /docs to test."}
+    return {"message": "✅ LLM PDF QA API is running. Visit /docs to test."}

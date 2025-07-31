@@ -3,17 +3,17 @@ uvicorn==0.18.3
 python-dotenv==0.21.0
 requests==2.31.0
 
-# For PDF parsing
+# PDF parsing
 pypdf==3.8.1
 
-# For Pinecone integration
+# Pinecone
 pinecone-client==2.2.4
 
-# Hugging Face + Sentence Transformers
+# Sentence Transformers (compatible with Hugging Face)
 sentence-transformers==2.2.2
 transformers==4.28.1
-tokenizers==0.13.3  # ✅ Prebuilt wheel, avoids Rust compile
-huggingface_hub==0.13.4  # ✅ Compatible with both sentence-transformers and transformers
+tokenizers==0.13.3
+huggingface_hub==0.13.4
 
-# For FastAPI file uploads
+# File uploads
 python-multipart==0.0.6

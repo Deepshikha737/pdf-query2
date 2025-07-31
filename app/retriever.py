@@ -11,7 +11,8 @@ def get_embedder():
     global _embedder
     if _embedder is None:
         from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")  # or a smaller model if needed
+        _embedder = SentenceTransformer("paraphrase-MiniLM-L3-v2")  # ~80MB
+  # or a smaller model if needed
     return _embedder
 
 def get_index():

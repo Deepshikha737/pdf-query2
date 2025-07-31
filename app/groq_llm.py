@@ -1,5 +1,3 @@
-# app/groq_llm.py
-
 import os
 import requests
 from dotenv import load_dotenv
@@ -23,13 +21,13 @@ def query_groq_llm(context, question):
     }
 
     data = {
-        "model": "llama3-8b-8192",  # keep it light for 512MB
+        "model": "llama3-8b-8192",  # Smaller model
         "messages": [
             {"role": "system", "content": "You are an intelligent assistant."},
             {"role": "user", "content": f"Use the following context to answer the question.\n\nContext:\n{context}\n\nQuestion:\n{question}"}
         ],
-        "temperature": 0.5,
-        "max_tokens": 200
+        "temperature": 0.3,       # Reduce hallucination & memory use
+        "max_tokens": 150         # Lowered to limit output size
     }
 
     try:

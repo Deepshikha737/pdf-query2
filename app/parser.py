@@ -7,7 +7,7 @@ def extract_text_from_pdf(file_bytes: bytes, max_pages: int = 20):
 
     for i, page in enumerate(reader.pages):
         if i >= max_pages:
-            break
+            break  # Stop early to limit memory use
         text = page.extract_text()
         if text:
             text_chunks.append(text)

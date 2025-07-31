@@ -1,19 +1,11 @@
 fastapi==0.78.0
 uvicorn==0.18.3
-python-dotenv==0.21.0
-requests==2.31.0
-
-# PDF parser
 pypdf==3.8.1
-
-# Hugging Face ecosystem
+python-multipart==0.0.6
 sentence-transformers==2.2.2
 transformers==4.28.1
-tokenizers==0.13.3  # ✅ prebuilt wheel available
+tokenizers==0.13.3
 huggingface_hub==0.13.4
-
-# Pinecone
 pinecone-client==2.2.4
-
-# Multipart for file uploads
-python-multipart==0.0.6
+requests==2.31.0
+python-dotenv==0.21.0

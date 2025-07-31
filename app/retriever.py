@@ -6,8 +6,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_index():
-    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    return pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+    api_key = os.getenv("PINECONE_API_KEY")
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+
+    if not api_key or not index_name:
+        raise ValueError("❌ Pinecone API key or Index name not set in environment variables.")
+
+    pc = Pinecone(api_key=api_key)
+    index = pc.Index(index_name)
+
+    # Optional: ensure index is ready
+    try:
+        index.describe_index_stats()
+    except Exception as e:
+        raise RuntimeError(f"❌ Pinecone index not ready or does not exist: {e}")
+
+    return index
 
 def get_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")

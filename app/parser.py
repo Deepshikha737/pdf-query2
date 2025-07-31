@@ -1,6 +1,15 @@
 from pypdf import PdfReader
 import io
 
-def extract_text_from_pdf(file_bytes: bytes):
+def extract_text_from_pdf(file_bytes: bytes, max_pages: int = 20):
     reader = PdfReader(io.BytesIO(file_bytes))
-    return "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+    text_chunks = []
+
+    for i, page in enumerate(reader.pages):
+        if i >= max_pages:
+            break
+        text = page.extract_text()
+        if text:
+            text_chunks.append(text)
+    
+    return "\n".join(text_chunks)

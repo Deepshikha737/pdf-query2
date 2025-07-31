@@ -6,6 +6,6 @@ pypdf==3.8.1
 pinecone-client==2.2.4
 sentence-transformers==2.2.2
 transformers==4.28.1
+huggingface_hub==0.13.4
 tokenizers==0.13.3
-huggingface_hub==0.10.1
 python-multipart==0.0.6

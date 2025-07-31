@@ -3,17 +3,17 @@ uvicorn==0.18.3
 python-dotenv==0.21.0
 requests==2.31.0
 
-# PDF parsing
+# PDF parser
 pypdf==3.8.1
+
+# Hugging Face ecosystem
+sentence-transformers==2.2.2
+transformers==4.28.1
+tokenizers==0.13.3  # ✅ prebuilt wheel available
+huggingface_hub==0.13.4
 
 # Pinecone
 pinecone-client==2.2.4
 
-# Sentence Transformers (compatible with Hugging Face)
-sentence-transformers==2.2.2
-transformers==4.28.1
-tokenizers==0.13.3
-huggingface_hub==0.13.4
-
-# File uploads
+# Multipart for file uploads
 python-multipart==0.0.6

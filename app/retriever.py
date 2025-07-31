@@ -10,23 +10,25 @@ _index = None
 def get_embedder():
     global _embedder
     if _embedder is None:
-        from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer("paraphrase-MiniLM-L3-v2")  # ~80MB
-  # or a smaller model if needed
+        try:
+            from sentence_transformers import SentenceTransformer
+            # Use a small model to fit in 512MB RAM
+            _embedder = SentenceTransformer("all-MiniLM-L4-v2")  # ~60MB
+        except Exception as e:
+            raise RuntimeError(f"❌ Failed to load embedder: {e}")
     return _embedder
 
 def get_index():
     global _index
     if _index is None:
-        pinecone.init(
-            api_key=os.getenv("PINECONE_API_KEY"),
-            environment=os.getenv("PINECONE_ENVIRONMENT")
-        )
-        index_name = os.getenv("PINECONE_INDEX_NAME")
-        if not index_name:
-            raise ValueError("❌ Pinecone index name not set in environment variables.")
-
         try:
+            pinecone.init(
+                api_key=os.getenv("PINECONE_API_KEY"),
+                environment=os.getenv("PINECONE_ENVIRONMENT")
+            )
+            index_name = os.getenv("PINECONE_INDEX_NAME")
+            if not index_name:
+                raise ValueError("❌ Pinecone index name not set in environment variables.")
             _index = pinecone.Index(index_name)
             _index.describe_index_stats()
         except Exception as e:
@@ -34,8 +36,12 @@ def get_index():
     return _index
 
 def store_chunks_in_pinecone(chunks, file_id):
-    embedder = get_embedder()
-    index = get_index()
+    try:
+        embedder = get_embedder()
+        index = get_index()
+    except Exception as e:
+        print(f"❌ Initialization error: {e}")
+        return
 
     vectors = []
     for i, chunk in enumerate(chunks):
@@ -50,13 +56,15 @@ def store_chunks_in_pinecone(chunks, file_id):
             print(f"⚠️ Skipping chunk {i} due to encoding error: {e}")
 
     if vectors:
-        index.upsert(vectors=vectors)
+        try:
+            index.upsert(vectors=vectors)
+        except Exception as e:
+            print(f"❌ Upsert failed: {e}")
 
 def query_chunks_from_pinecone(query, top_k=3):
-    embedder = get_embedder()
-    index = get_index()
-
     try:
+        embedder = get_embedder()
+        index = get_index()
         query_vec = embedder.encode(query).tolist()
         results = index.query(vector=query_vec, top_k=top_k, include_metadata=True)
         return [match["metadata"]["text"] for match in results.get("matches", [])]

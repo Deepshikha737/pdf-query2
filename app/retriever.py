@@ -6,33 +6,43 @@ from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
+# ✅ Global singletons to avoid reloading
+_embedder = None
+_index = None
+
 def get_embedder():
-    try:
-        return SentenceTransformer("paraphrase-MiniLM-L3-v2",device="cpu")
-    except Exception as e:
-        raise RuntimeError(f"❌ Failed to load embedder: {e}")
+    global _embedder
+    if _embedder is None:
+        try:
+            _embedder = SentenceTransformer("paraphrase-MiniLM-L3-v2", device="cpu")
+        except Exception as e:
+            raise RuntimeError(f"❌ Failed to load embedder: {e}")
+    return _embedder
 
 def get_index():
-    try:
-        index_name = os.getenv("PINECONE_INDEX_NAME")
-        if not index_name:
-            raise ValueError("❌ Pinecone index name not set.")
-        
-        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    global _index
+    if _index is None:
+        try:
+            index_name = os.getenv("PINECONE_INDEX_NAME")
+            if not index_name:
+                raise ValueError("❌ Pinecone index name not set.")
 
-        if index_name not in pc.list_indexes().names():
-            pc.create_index(
-                name=index_name,
-                dimension=384,
-                metric="cosine",
-                spec=ServerlessSpec(
-                    cloud="aws",
-                    region=os.getenv("PINECONE_REGION", "us-west-2")
+            pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+            if index_name not in pc.list_indexes().names():
+                pc.create_index(
+                    name=index_name,
+                    dimension=384,
+                    metric="cosine",
+                    spec=ServerlessSpec(
+                        cloud="aws",
+                        region=os.getenv("PINECONE_REGION", "us-west-2")
+                    )
                 )
-            )
-        return pc.Index(index_name)
-    except Exception as e:
-        raise RuntimeError(f"❌ Pinecone index error: {e}")
+            _index = pc.Index(index_name)
+        except Exception as e:
+            raise RuntimeError(f"❌ Pinecone index error: {e}")
+    return _index
 
 def store_chunks_in_pinecone(chunks, file_id):
     try:

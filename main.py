@@ -11,7 +11,6 @@ import logging
 
 load_dotenv()
 app = FastAPI()
-
 logging.basicConfig(level=logging.INFO)
 
 @app.post("/run")

@@ -1,77 +1,59 @@
 import os
 from dotenv import load_dotenv
+
 from pinecone import Pinecone, ServerlessSpec
 from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
-_index = None
-_pc_client = None
-
-
 def get_embedder():
-    # Load the embedder only when needed
     try:
-        return SentenceTransformer("paraphrase-MiniLM-L3-v2")  # small 384-dim model
+        return SentenceTransformer("paraphrase-MiniLM-L3-v2",device="cpu")
     except Exception as e:
         raise RuntimeError(f"❌ Failed to load embedder: {e}")
 
-
 def get_index():
-    global _index, _pc_client
-    if _index is None:
-        try:
-            index_name = os.getenv("PINECONE_INDEX_NAME")
-            if not index_name:
-                raise ValueError("❌ Pinecone index name not set in environment variables.")
+    try:
+        index_name = os.getenv("PINECONE_INDEX_NAME")
+        if not index_name:
+            raise ValueError("❌ Pinecone index name not set.")
+        
+        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-            _pc_client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-
-            if index_name not in _pc_client.list_indexes().names():
-                _pc_client.create_index(
-                    name=index_name,
-                    dimension=384,
-                    metric="cosine",
-                    spec=ServerlessSpec(
-                        cloud="aws",
-                        region=os.getenv("PINECONE_REGION", "us-west-2")
-                    )
+        if index_name not in pc.list_indexes().names():
+            pc.create_index(
+                name=index_name,
+                dimension=384,
+                metric="cosine",
+                spec=ServerlessSpec(
+                    cloud="aws",
+                    region=os.getenv("PINECONE_REGION", "us-west-2")
                 )
-            _index = _pc_client.Index(index_name)
-        except Exception as e:
-            raise RuntimeError(f"❌ Pinecone index not ready or does not exist: {e}")
-    return _index
-
+            )
+        return pc.Index(index_name)
+    except Exception as e:
+        raise RuntimeError(f"❌ Pinecone index error: {e}")
 
 def store_chunks_in_pinecone(chunks, file_id):
     try:
+        embedder = get_embedder()
         index = get_index()
+
         for i, chunk in enumerate(chunks):
-            try:
-                embedder = get_embedder()
-                vec = embedder.encode(chunk).tolist()
-
-                # Upsert each vector immediately to avoid memory buildup
-                index.upsert(vectors=[{
-                    "id": f"{file_id}-{i}",
-                    "values": vec,
-                    "metadata": {"text": chunk}
-                }])
-
-                del embedder  # Free memory
-            except Exception as e:
-                print(f"⚠️ Skipping chunk {i} due to error: {e}")
+            vec = embedder.encode(chunk, convert_to_numpy=True).tolist()
+            index.upsert(vectors=[{
+                "id": f"{file_id}-{i}",
+                "values": vec,
+                "metadata": {"text": chunk}
+            }])
     except Exception as e:
-        print(f"❌ Initialization error: {e}")
-
+        print(f"❌ Store error: {e}")
 
 def query_chunks_from_pinecone(query, top_k=3):
     try:
-        index = get_index()
         embedder = get_embedder()
-        query_vec = embedder.encode(query).tolist()
-        del embedder  # Free memory after encoding
-
+        index = get_index()
+        query_vec = embedder.encode(query, convert_to_numpy=True).tolist()
         results = index.query(vector=query_vec, top_k=top_k, include_metadata=True)
         return [match["metadata"]["text"] for match in results.get("matches", [])]
     except Exception as e:
